@@ -23,8 +23,9 @@ except:
 mycursor =conn.cursor()
 
 app = Flask(__name__)
-
-
+status="alive"
+node_ip ="127.0.0.1:5001"
+ 
 @app.route('/')
 def index():
     return 'Server Works!'
@@ -37,40 +38,70 @@ def central():
     try:
         vmdID=input['vmdID']
     except:
+
+        if vmdID is none:
+            return "Please enter VMD ID"
+
         return "Please enter VMD ID"
     try:
         username=input['username']
+
     except:
+        if username is none:
+            return "Please enter username"
+
         return "Please enter username"
     try:
         encrypted_password=input['encrypted_password']
+
     except:
+        if encrypted_password is none:
+            return "Please enter encrypted_password"
         return "Please enter encrypted password"
     try:
         driver_id=input['driver_id']
+
     except:
+        if driver_id is none:
+            return "Please enter driver id"
         return "Please enter driver license no"
     try:
         latitude=input['latitude'] 
+
     except:
+        if latitude is none:
+            return "Please enter latitude"
         return "Please enter latitude"
     try:
         longitude=input['longitude']
+
     except:
+        if longitude is none:
+            return "Please enter encrypted_password"
         return "Please enter longitude"
+    print("Master central")
+    tin = time.time()
+    mtimestamp = datetime.datetime.fromtimestamp(tin).strftime('%Y-%m-%d %H:%M:%S')
+    mycursor.execute("INSERT into coordinator_alive(node_ip, timestamp,status) values(%s, %s, %s)", (node_ip, mtimestamp,status))
+    conn.commit()
 
     a=1
     b=2
     #check security module
     issueTic=issueTicket(vmdID)
-    print(issueTic)
+    
+    
     dk=issueTic
     authentication=authServer(vmdID, username, encrypted_password,driver_id,dk) 
+    if authentication ==100:
+        return {"status":"driver not permitted to drive this vehicle"}
+    if authentication ==150:
+        return {"status":"re enter password"}
     #check is zone alive
     zones_alive=zoneAlive(a)
     #check the local zone
     local_zone=findLocalZone(latitude,longitude)   
-    print(local_zone)
+    
     #check the zone capacity
     zone_capacity=zoneCapacity(b)
 
@@ -79,11 +110,11 @@ def central():
 
     for row in result1 :
         zone_id=row[0]
-        print(zone_id)
+        
         try:
             if local_zone ==1 and zone_id == 1:
                 zone_aloc=1
-                print("funny")
+                
             elif local_zone ==2 and zone_id == 2:
                 zone_aloc=2
             elif local_zone ==3 and zone_id == 3:
@@ -97,11 +128,11 @@ def central():
     ccurrent_timestamped = datetime.datetime.fromtimestamp(timez).strftime('%Y-%m-%d %H:%M:%S') 
 
     sid=mycursor.execute("SELECT zone_capacity FROM zone_available where zone_id=%s",(zone_aloc,))
-    print("hate")
+    
     sid=mycursor.fetchall()
     for row in sid:
         zone_capacity=row[0]
-        print(zone_capacity)
+        
         if zone_capacity<3000:
             answ = mycursor.execute("SELECT zone_port FROM zone_available where zone_id=%s",(zone_aloc,))
             answ = mycursor.fetchall()
@@ -136,27 +167,41 @@ def central():
                 mycursor.execute("INSERT into vmd_zone_allocation(vmd_id, zone_alloc_timestamp, zone_port) values(%s, %s,%s)", (vmdID, ccurrent_timestamped, zone_port,))
                 conn.commit()
                 return {"zone port":"6004"}
+    try:
+        zone_port
+        
+    except:
+        
+        contingency_zone=contingency(b)
+        ts = time.time()
+        conti_timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
 
-            jsdata = json.dumps(data)
-            return jsdata
-        else:
-            contingency_zone=contingency(b)
-            conti_timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+        mycursor.execute("INSERT into vmdContingencyZone(vmd_id, conti_timestamp, zone_port) values(%s, %s,%s)", (vmdID,ccurrent_timestamped , contingency_zone,))
+        conn.commit()
 
-            mycursor.execute("INSERT into vmdContingencyZone(vmd_id, conti_timestamp, zone_port) values(%s, %s,%s)", (vmdID, conti_timestamp, zone_port,))
-            conn.commit()
-            return contingency_zone
+        mycursor.execute("INSERT into vmd_zone_allocation(vmd_id, zone_alloc_timestamp, zone_port) values(%s, %s,%s)", (vmdID, ccurrent_timestamped, contingency_zone,))
+        conn.commit()
+        
+        if(contingency_zone==6001):
+            return {"zone port":"6001"}
+        if(contingency_zone==6002):
+            return {"zone port":"6002"}
+        if(contingency_zone==6003):
+            return {"zone port":"6003"}
+        if(contingency_zone==6004):
+            return {"zone port":"6004"}
 
 def authServer(vmdID, username, encrypted_password,driver_id,dk):
-
+    print(driver_id)
     result = mycursor.execute("SELECT vmd_id,username FROM auth where vmd_id=%s",(vmdID,))
     result = mycursor.fetchall()
     for row in result :
         vmdID2=row[0]
         username2=row[1]
-        
+       
     try:
         vmdID2
+        
     except NameError:
         return 'VMD not identified'
 
@@ -169,80 +214,108 @@ def authServer(vmdID, username, encrypted_password,driver_id,dk):
     sol = mycursor.fetchall()
     for row in sol :
         v_category=row[0]
-    try:   
+    try:
         ekey="2eEGqWWnclI-W1ILDyG5gXfLAisa7Sc93shTEggZ2CQ="
         f= Fernet(ekey)    
         arr = bytes(encrypted_password, 'utf-8')
         obj3 = f.decrypt(arr)
         usn=obj3.decode("utf-8") 
-        print(usn)
-        print(v_category)
-    except Exception as e:
-        return 'Incorrect password'
-
-    try:
-        driver_vehicle_category
-    except NameError:
-        return 'Invalid driver license'
-
-    if driver_vehicle_category==v_category:
-        d=1
+    except:
+        return 150
+    if username==usn:
+        credential=1
     else:
-        return 'Driver not allowed to drive this type of vehicle'
+        return 150
+   # try:
+   #     driver_vehicle_category
+   # except:
+   #     return 0
+   
+    if driver_vehicle_category==v_category:
+        vehicle_can_drive=1
+    else:
+        return 100
 
+    result = mycursor.execute("SELECT curr_timestamp,expiry_time FROM vmd_timestamp where vmd_id=%s",(vmdID,))
+    result = mycursor.fetchall()
+    for row in result :
+        ticexp_time=row[0]
+
+    tims = time.time()
+    ccurrent_timestamped = datetime.datetime.fromtimestamp(tims).strftime('%Y-%m-%d %H:%M:%S') 
+    ccurrent_timestamped2=datetime.datetime.strptime(ccurrent_timestamped,'%Y-%m-%d %H:%M:%S')
+
+    yc = int(ccurrent_timestamped2.strftime('%Y'))
+    mc = int(ccurrent_timestamped2.strftime('%m'))
+    dc = int(ccurrent_timestamped2.strftime('%d'))
+    hc = int(ccurrent_timestamped2.strftime('%H'))
+    minc= int(ccurrent_timestamped2.strftime('%M'))
+    sc = int(ccurrent_timestamped2.strftime('%S'))
+
+    ccurr_timestamped = datetime.datetime(yc, mc, dc, hc, minc,sc)
     try:
-        jet = mycursor.execute("SELECT curr_timestamp, expiry_time FROM vmd_timestamp where vmd_id=%s",(vmdID,)) #new table might have to introduce
-        jet = mycursor.fetchall()
-        for row in answer :
-            curr_timestamp=row[0]
+        yz = int(ticexp_time.strftime('%Y'))
+        mz = int(ticexp_time.strftime('%m'))
+        dz = int(ticexp_time.strftime('%d'))
+        hz = int(ticexp_time.strftime('%H'))
+        minz= int(ticexp_time.strftime('%M'))
+        sz = int(ticexp_time.strftime('%S'))
+
+        ticexpiry_time = datetime.datetime(yz, mz, dz, hz, minz,sz)
+
+        if ccurr_timestamped.time() > ticexpiry_time.time():
+            new=1
+        else:
+            new=0
+    except:
         new=0
+    try:
+        ticexp_time
     except:
         new=1
 
-    if dk==1 or new ==1:
+    if dk==1 or new==1:
         needTicket=1
     else:
         needTicket=0
-
-    if username==usn and d==1:
-        valid=1
+    
+    if credential==1 and vehicle_can_drive==1:
+        authe=1
+        
     else:
-        valid=0
+        authe=0
 
-    if valid==1 and needTicket==1:
+    if authe==1 and needTicket==1:
+        
         ts = time.time()
         timestamp = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
         curr_timestamp=timestamp
         #curr_timestamp = timestamp.strftime('%Y-%m-%d %H:%M:%S') 
-        print(timestamp)
+        
 
         t = time.localtime()
         current_time = time.strftime("%H:%M:%S", t)
         hour = time.strftime("%H", t)
-        print(current_time)
-
+        
         t_hours_from_now = datetime.datetime.now() + datetime.timedelta(hours=3)
         expiry_time=t_hours_from_now
         exp_time=t_hours_from_now.isoformat()
-        print(exp_time)
+        
         ext=t_hours_from_now.replace(microsecond=0)
         #expiry_timestamp = t_hours_from_now.strftime('%Y-%m-%d %H:%M:%S') 
-        print(ext)
+        
 
         curr_time=datetime.datetime.now().isoformat()
-        print(curr_time)
-      
-        data = {"timestamp": curr_time ,  
-                "exp_time": exp_time,  
-                "port":"6002"}
+        
+
 
         mycursor.execute("INSERT into vmd_timestamp(vmd_id, curr_timestamp, expiry_time) values(%s, %s,%s)", (vmdID, curr_timestamp, expiry_time,))
         conn.commit()
 
-        jsdata = json.dumps(data)
-
+        mycursor.execute("INSERT into vmd_timestamp_log(vmd_id, curr_timestamp, expiry_time) values(%s, %s,%s)", (vmdID, curr_timestamp, expiry_time,))
+        conn.commit()
       
-        return jsdata
+        return "connected"
     else:
         return 'Service cannot be accessed'
 
@@ -336,12 +409,12 @@ def findLocalZone(latitude,longitude):
         return 4
 
 def zoneAlive(a):
-    print("baby")
+    
     result = mycursor.execute("SELECT zone_id FROM zone_dead")
     result = mycursor.fetchall()
     for row in result :
         zone_id=row[0]
-        print("in dummy")
+        
         print(zone_id)
     mycursor.execute("DELETE FROM zone_alive where zone_id=%s", (zone_id,))
     conn.commit()
@@ -349,27 +422,24 @@ def zoneAlive(a):
 
 def zoneCapacity(b):
 
-    answer = mycursor.execute("SELECT zone_id,zone_capacity FROM zone_available")
-    answer = mycursor.fetchall()
-    print("duckling")
-    for row in answer :
-        zone_id=row[0]
-        print("soappy")
-        zone_capacity=row[1]
-        if zone_capacity >= 3000:
-            mycursor.execute("DELETE FROM zone_available where zone_id=%s", (zone_id))
-            conn.commit()
+    zone_maxlimit=3001
+    mycursor.execute("DELETE FROM zone_available where zone_capacity>=%s", (zone_maxlimit,))
+    conn.commit()
+  
     return "zones free capacity"
 
 def contingency(b):
-
+    
     yid=mycursor.execute("SELECT MIN(zone_capacity) AS minimum FROM zone_available")
-    yid = cursor.fetchall()
+    yid =mycursor.fetchall()
     for row in yid :
         min_zone_capacity=row[0]
+        
     ans=mycursor.execute("SELECT zone_port FROM zone_available where zone_capacity=%s", (min_zone_capacity,))
+    ans =mycursor.fetchall()
     for row in ans :
         zone_port=row[0]
+        
     return zone_port
 
 def issueTicket(vmdID):
@@ -386,7 +456,7 @@ def issueTicket(vmdID):
     sc = int(zcurrent_timestamped2.strftime('%S'))
 
     zcurr_timestamped = datetime.datetime(yc, mc, dc, hc, minc,sc)
-
+    
 
     answer = mycursor.execute("SELECT curr_timestamp, expiry_time FROM vmd_timestamp where vmd_id=%s",(vmdID,)) #new table might have to introduce
     answer = mycursor.fetchall()
@@ -406,6 +476,7 @@ def issueTicket(vmdID):
 #-----------ticket expiry---------------------------------
         if zcurr_timestamped.time() > expiry_time.time():
             jdk=1
+            
             mycursor.execute("DELETE FROM vmd_timestamp where vmd_id=%s", (vmdID,))
             conn.commit()
         try:
@@ -419,6 +490,7 @@ def issueTicket(vmdID):
             jdk=0
     except:
         jdk=0
+        
 #------------zone dead-------------------------------------
     result = mycursor.execute("SELECT zone_id,zone_port FROM zone_dead")
     result = mycursor.fetchall()
@@ -430,26 +502,33 @@ def issueTicket(vmdID):
         answer2 = mycursor.fetchall()
         for row in answer2 :
             zone_ported=row[0]
+        
     except:
         ans = mycursor.execute("SELECT zone_port FROM vmdContingencyZone where vmd_id=%s",(vmdID,)) #new table might have to introduce
         ans = mycursor.fetchall()
         for row in ans :
             zone_ported=row[0]
+        
 
+    try:
 
-    if zone_port==zone_ported:
-        dul=1
-        try:
-            mycursor.execute("DELETE FROM vmdLocalZone where vmd_id=%s", (vmdID,))
-            conn.commit()
-        except:
-            mycursor.execute("DELETE FROM vmdContingencyZone where vmd_id=%s", (vmdID,))
-            conn.commit()
-    else:
-        dul=0
-
-    if jdk==1 or dul==1:
-        dk=1
-    else:
-        dk=0
-    return dk
+        if zone_port==zone_ported:
+            dul=1
+            
+            try:
+                mycursor.execute("DELETE FROM vmdLocalZone where vmd_id=%s", (vmdID,))
+                conn.commit()
+            except:
+                mycursor.execute("DELETE FROM vmdContingencyZone where vmd_id=%s", (vmdID,))
+                conn.commit()
+        else:
+            dul=0
+            
+        if jdk==1 or dul==1:
+            dk=1
+        else:
+            dk=0
+        return dk
+    except:
+        
+        return "9"

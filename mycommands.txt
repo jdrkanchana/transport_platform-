@@ -1,0 +1,55 @@
+Coordinates of Colombo, all correct
+POST
+http://127.0.0.1:5001/central
+{
+"vmdID":1,
+"username":"DillyD!",
+"encrypted_password":"gAAAAABeu11Ee42w_-IWufaWTPZ_HzNn8PgZHlRT_Uu4aq5IhllQU6CTsmOQw-6buDYDbWsiiEd2NPcyiof5vXGOUfTWohAHnQ==",
+"driver_id":"D0167621",
+"latitude": 6.8018,
+"longitude":79.9227
+}
+
+ 79.9227
+
+Coordinates of Galle
+
+POST
+http://127.0.0.1:5001/central
+{
+"vmdID":"1",
+"username":"DillyD!",
+"encrypted_password":"gAAAAABeu11Ee42w_-IWufaWTPZ_HzNn8PgZHlRT_Uu4aq5IhllQU6CTsmOQw-6buDYDbWsiiEd2NPcyiof5vXGOUfTWohAHnQ==",
+"driver_id":"D0167621",
+"latitude": 6.0535,
+"longitude":80.2210
+}
+
+
+Coordinates of jaffna
+POST
+http://127.0.0.1:5001/central
+{
+"vmdID":"1",
+"username":"DillyD!",
+"encrypted_password":"gAAAAABeu11Ee42w_-IWufaWTPZ_HzNn8PgZHlRT_Uu4aq5IhllQU6CTsmOQw-6buDYDbWsiiEd2NPcyiof5vXGOUfTWohAHnQ==",
+"driver_id":"D0167621",
+"latitude": 9.6651,
+"longitude":80.0207
+}
+
+
+Coordinates of Colombo, no vmd
+POST
+http://127.0.0.1:5001/central
+{
+
+"username":"DillyD!",
+"encrypted_password":"gAAAAABeu11Ee42w_-IWufaWTPZ_HzNn8PgZHlRT_Uu4aq5IhllQU6CTsmOQw-6buDYDbWsiiEd2NPcyiof5vXGOUfTWohAHnQ==",
+"driver_id":"D0167621",
+"latitude": 6.8018,
+"longitude":79.9227
+}
+
+SET FLASK_APP=centralM.py
+flask run --host=127.0.0.1 --port=6001
